@@ -1,11 +1,30 @@
 import subprocess
+from functools import wraps
 from bot import LOGGER, dispatcher
-from telegram import ParseMode
-from telegram.ext import CommandHandler
-from bot.helper.telegram_helper.filters import CustomFilters
-from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot import OWNER_ID
+from telegram import ParseMode, Update
+from telegram.ext import CallbackContext, CommandHandler
+from telegram.ext.dispatcher import run_async
 
+def dev_plus(func):
+    
+    @wraps(func)
+    def is_dev_plus_func(update: Update, context: CallbackContext, *args,
+                         **kwargs):
+        bot = context.bot
+        user = update.effective_user
 
+        if user.id == OWNER_ID:
+            return func(update, context, *args, **kwargs)
+        elif not user:
+            pass
+        else:
+            return func(update, context, *args, **kwargs)
+
+    return is_dev_plus_func
+
+@dev_plus
+@run_async
 def shell(update, context):
     message = update.effective_message
     cmd = message.text.split(' ', 1)
@@ -37,7 +56,5 @@ def shell(update, context):
     else:
         message.reply_text(reply, parse_mode=ParseMode.MARKDOWN)
 
-
-SHELL_HANDLER = CommandHandler(BotCommands.ShellCommand, shell, 
-                                                  filters=CustomFilters.owner_filter, run_async=True)
+SHELL_HANDLER = CommandHandler(['sh', 'shell', 'r'], shell)
 dispatcher.add_handler(SHELL_HANDLER)
